@@ -1,0 +1,29 @@
+{
+  "name": "snowviz",
+  "version": "0.0.1",
+  "description": "Snow Viz by @liquidx",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.16.4",
+    "express-handlebars": "^3.0.0",
+    "node-sass-middleware": "^0.11.0",
+    "p5": "^0.7.3",
+    "dat.gui": "^0.7.5",
+    "gpx-parse": "^0.10.4"
+  },
+  "engines": {
+    "node": "6.10.x"
+  },
+  "repository": {
+    "url": "https://github.com/liquidx/liquidx-genart/"
+  },
+  "license": "MIT",
+  "keywords": [
+    "node",
+    "glitch",
+    "express"
+  ]
+}
