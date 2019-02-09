@@ -12,7 +12,17 @@
   <body class="index">
     <header><h1 class="title">Visualizing Snow Tracks by <a href="https://liquidx.net/">@liquidx</a></h1></header>
     <main>
-      <canvas></canvas>
+        <style>
+        .chart {
+          background-color: steelblue;
+          width: 240;
+          height: 240;
+        }
+        .chart rect {
+          fill: white;
+        }
+       </style>
+        <svg class="chart" id="chart1" width="240" height="240"></svg>
     </main>
     
     <script src="/p5.min.js"></script> 
