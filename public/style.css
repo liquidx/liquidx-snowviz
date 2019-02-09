@@ -1,0 +1,69 @@
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: #333;
+}
+
+
+body {
+  font-family: 'Share Tech Mono', sans-serif;  
+  font-size: 14pt;
+  background: #f0f0f0;
+  
+}
+
+body.index {
+  padding-top: 96px;
+  padding-left: 72px;
+  max-width: 800px;
+}
+
+body.canvas {
+  padding: 0;
+  margin: 0;
+  background: #000000;
+  color: #808080;
+}
+
+body.canvas main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.canvas header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.canvas a {
+  color: #e0e0e0;
+}
+
+h1 {
+  font-size: 1.4em;
+  margin: 0.67em 0;
+  font-family: 'Bungee', sans-serif;
+  margin-bottom: 5px;
+  color: #333
+}
+
+
+body.canvas h1 {
+  margin: 0.67em 0;
+  color: #999;
+}
+
+footer#controls {
+  margin: 0.67em 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+p {
+  max-width: 600px;
+}
