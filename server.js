@@ -26,23 +26,25 @@ app.use(express.static('node_modules/p5/lib'));
 app.use(express.static('node_modules/p5/lib/addons'));
 app.use(express.static('node_modules/dat.gui/build'));
 
-app.get("/g/:seq", (request, response) => {
-  response.render('run', {seq: request.params.seq});
-});
-
 app.get("/c/:seq", (request, response) => {
   response.render('practice', {seq: request.params.seq});
 });
 
-app.get("/t/:name", (request, response) => {
-  var gpxUrl = "https://cdn.glitch.com/5874eab4-a913-4022-82c7-c42ab13dae78%2Fskitracks-2018-01-16a.gpx?1549628411552";
+app.get('/data/:datestring/:filename', (request, response) => {
+  console.log(request.params);
+  var gpxPath = 'data/' + request.params.datestring + '/' + request.params.filename;
+  console.log(gpxPath);
 //    response.send(JSON.stringify({'tracks': []}));
-  gpxParse.parseRemoteGpxFile(gpxUrl, function(err, data) {
+  gpxParse.parseGpxFromFile(gpxPath, function(err, data) {
+    if (err != null) {
+      console.error(err);
+      return;
+    }
     response.send(JSON.stringify(data));
   });
 });
 
 
 var listener = app.listen(process.env.PORT, function () {
-  console.log('Your app is listening on port ' + listener.address().port);
+  console.log('http://localhost:' + listener.address().port + "/");
 });
