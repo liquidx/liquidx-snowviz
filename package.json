@@ -8,15 +8,20 @@
     "watch": "npx webpack --watch",
     "start": "webpack && node server.js"
   },
+  "devDependencies": {
+    "webpack": "^4.29.2",
+    "webpack-cli": "^3.2.2"
+  },
   "dependencies": {
-    "d3": "^5.9.0",
+    "d3": "^5.9.1",
     "dat.gui": "^0.7.5",
     "eslint": "^5.13.0",
     "express": "^4.16.4",
     "express-handlebars": "^3.0.0",
     "gpx-parse": "^0.10.4",
     "node-sass-middleware": "^0.11.0",
-    "p5": "^0.7.3"
+    "p5": "^0.7.3",
+    "ajv": "=6.8.1"
   },
   "engines": {
     "node": "6.10.x"
@@ -29,9 +34,5 @@
     "node",
     "glitch",
     "express"
-  ],
-  "devDependencies": {
-    "webpack": "^4.29.3",
-    "webpack-cli": "^3.2.3"
-  }
+  ]
 }
