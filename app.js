@@ -18,9 +18,9 @@ var getPoints = function(gpxObjects) {
   var points = [];  // lat, lon, elevation, time (2019-01-16T01:40:28.710Z)
   for (var gpxObject of gpxObjects) {
     for (var track of gpxObject.tracks) {
-      console.log(`-- Track ${track.name}`);
+      //console.log(`-- Track ${track.name}`);
       for (var segment of track.segments) {
-        console.log(`  -- Segment: Length ${segment.length}`);
+        //console.log(`  -- Segment: Length ${segment.length}`);
         for (var point of segment) {
           points.push(point);
         }
@@ -30,14 +30,108 @@ var getPoints = function(gpxObjects) {
   return points;
 }
 
-function plot(groupId, svgId, gpxObjects) {
+var plot = function(groupId, svgId, gpxObjects) {
   var points = getPoints(gpxObjects);
-
-
   var datetimeParse = d3.isoParse;
-
   points = points.map(p => { return {lat: p.lat, lon: p.lon, elevation: p.elevation, time: datetimeParse(p.time)} });
   d3.select(groupId).select('.points').html(points.length);
+
+  var altChart = d3.select(groupId).select('.chart-altitude');
+  plotAltitude(altChart, points);
+
+  var mapChart = d3.select(groupId).select('.chart-map');
+  plotMap(mapChart, points, true, true);
+};
+
+// helper method to flip the coordinate based on the extent and a bool 
+var flipCoordinate = function(v, extent, flipOrNot) {
+  if (flipOrNot) {
+    return extent - v;
+  }
+  return v;
+};
+
+var plotMap = function(chart, points, flipX, flipY) {
+  if (chart.empty()) { return; }
+
+  var xt = d3.scaleTime()
+    .domain(d3.extent(points, d => d.time))
+    .range(xExtent);
+
+  var xlat = d3.scaleLinear()
+    .domain(d3.extent(points, d => d.lat))
+    .range(xExtent);
+
+  var ylon = d3.scaleLinear()
+    .domain(d3.extent(points, d => d.lon))
+    .range(yExtent);
+
+  var line = d3.line()
+    //.defined(d => !isNaN(d.time))
+    .x(d => { return flipCoordinate(xlat(d.lat), width, flipX)} )
+    .y(d => { return flipCoordinate(ylon(d.lon), height, flipY)} );
+
+
+
+  var defs = chart.append('defs');
+  var gradient = defs.append('linearGradient')
+    .attr('id', 'pathGradient')
+    .attr('x1', '0%')
+    .attr('y1', '0%')
+    .attr('x2', '100%')
+    .attr('y2', '100%');
+  gradient.append('stop')
+    .attr('offset', '0%')
+    .attr('stop-color', '#666666');
+  gradient.append('stop')
+    .attr('offset', '90%')
+    .attr('stop-color', '#666666');
+  gradient.append('stop')
+    .attr('offset', '100%')
+    .attr('stop-color', '#ffffff');
+
+  chart.append('path')
+    .datum(points)
+    .attr('id', 'trail')
+    .attr("fill", "none")
+    .attr("stroke", "#aaaaaa")
+    .attr("stroke-width", 1)
+    .attr("stroke-linejoin", "round")
+    .attr("stroke-linecap", "round")    
+    .attr('d', d => line(d));
+
+  const headLength = 30;
+  chart.append('path')
+    .datum([])
+    .attr('id', 'trailHead')
+    .attr("fill", "none")
+    .attr("stroke", "#ffffff")
+    .attr("stroke-width", 1)
+    .attr("stroke-linejoin", "round")
+    .attr("stroke-linecap", "round")    
+    .attr('d', d => line(d));    
+
+  // create dragging to scrub through time.
+  var dragging = e => {
+    var x = d3.event.x;
+    var cutoff = parseInt((x / xExtent[1]) * points.length);
+    var pointsSubset = points.slice(0, parseInt(cutoff));
+    chart.select('#trail')
+      .datum(pointsSubset)
+      .attr('d', d => line(d));
+    chart.select('#trailHead')
+      .datum(pointsSubset.slice(Math.max(0, pointsSubset.length - headLength)))
+      .attr('d', d => line(d));
+  };
+
+  var drag = d3.drag().on("drag", dragging);
+  chart.call(drag);
+
+
+};
+
+
+var plotAltitude = function(chart, points) {
 
   var x = d3.scaleTime()
     .domain(d3.extent(points, d => d.time))
@@ -47,7 +141,7 @@ function plot(groupId, svgId, gpxObjects) {
     .domain(d3.extent(points, d => d.elevation))
     .range(yExtent);
 
-  var chart1 = d3.select(svgId)
+  chart
     .attr('height', height)
     .attr('width', width);
 
@@ -62,8 +156,7 @@ function plot(groupId, svgId, gpxObjects) {
       .y(d => { return height - y(d.elevation); });  // svg's (0, 0) starts from the top.
 
   // line chart
-
-  chart1.append('path')
+  chart.append('path')
     .datum(points)
     .attr('class', 'line')
     .attr("fill", "none")
@@ -86,9 +179,9 @@ function plot(groupId, svgId, gpxObjects) {
     .extent(visualExtent)
     .on('zoom', zoomed);
 
-  chart1.call(zoom);
-  return {chart: chart1, x: x, y: y, line: line};
-}
+  chart.call(zoom);
+  return {chart: chart, x: x, y: y, line: line};
+};
 
 var massZoom = function(transform) {
   for (var chart of allCharts) {

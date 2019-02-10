@@ -16,16 +16,19 @@
         .chart-group {
           display: inline-block;
         }
-        .chart {
+        .chart-altitude {
           background-color: steelblue;
           width: 240;
           height: 240;
         }
-        .chart rect {
+        .chart-altitude rect {
           fill: white;
         }
-        .chart .line {
+        .chart-altitude .line {
           stroke: white;
+        }
+        .chart-map {
+          background-color: darkgreen;
         }
        </style>
 
@@ -33,28 +36,53 @@
         <div class="chart-group" id="slopes">
             <div>iOS Slopes</div>
             <div class="points"></div>
-            <svg class="chart" id="chart-slopes" width="240" height="240"></svg>
+            <div>
+              <svg class="chart-altitude"  width="240" height="240"></svg>
+            </div>
+            <div>
+              <svg class="chart-map" width="240" height="240"></svg>
+            </div>
         </div>
         <div class="chart-group" id="snoww">
             <div>iOS Snoww</div>
             <div class="points"></div>
-            <svg class="chart" id="chart-snoww" width="240" height="240"></svg>
-        </div>
+            <div>
+              <svg class="chart-altitude" width="240" height="240"></svg>
+            </div>
+            <div>
+              <svg class="chart-map" width="240" height="240"></svg>
+            </div>
+          </div>
         <div class="chart-group" id="skitracker">
            <div>Android Ski tracker</div>
            <div class="points"></div>
-           <svg class="chart" id="chart-skitracker" width="240" height="240"></svg>
+           <div>
+              <svg class="chart-altitude" width="240" height="240"></svg>
+            </div>
+            <div>
+              <svg class="chart-map" width="240" height="240"></svg>
+            </div>       
         </div>
         <div class="chart-group" id="skitracks">
           <div>Android Ski Tracks</div>
           <div class="points"></div>
-          <svg class="chart" id="chart-skitracks" width="240" height="240"></svg>
+          <div>
+              <svg class="chart-altitude" width="240" height="240"></svg>
+            </div>
+            <div>
+              <svg class="chart-map" width="240" height="240"></svg>
+            </div>
         </div>
         <div class="chart-group" id="tracesnow">
             <div>(Android) Trace Snow</div>
             <div class="points"></div>
-            <svg class="chart" id="chart-tracesnow" width="240" height="240"></svg>
-          </div>        
+            <div>
+                <svg class="chart-altitude" width="240" height="240"></svg>
+              </div>
+              <div>
+                <svg class="chart-map" width="240" height="240"></svg>
+              </div>
+        </div>        
     </main>
     
     <script src="/p5.min.js"></script> 
