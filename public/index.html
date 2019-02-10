@@ -13,6 +13,9 @@
     <header><h1 class="title">Visualizing Snow Tracks by <a href="https://liquidx.net/">@liquidx</a></h1></header>
     <main>
         <style>
+        .chart-group {
+          display: inline-block;
+        }
         .chart {
           background-color: steelblue;
           width: 240;
@@ -25,8 +28,32 @@
           stroke: white;
         }
        </style>
-        <svg class="chart" id="chart1" width="240" height="240"></svg>
-        <svg class="chart" id="chart2" width="240" height="240"></svg>
+
+        <div class="chart-group" id="tracesnow">
+          <div>Trace Snow</div>
+          <div class="points"></div>
+          <svg class="chart" id="chart-tracesnow" width="240" height="240"></svg>
+        </div>
+        <div class="chart-group" id="slopes">
+            <div>iOS Slopes</div>
+            <div class="points"></div>
+            <svg class="chart" id="chart-slopes" width="240" height="240"></svg>
+        </div>
+        <div class="chart-group" id="snoww">
+            <div>iOS Snoww</div>
+            <div class="points"></div>
+            <svg class="chart" id="chart-snoww" width="240" height="240"></svg>
+        </div>
+        <div class="chart-group" id="skitracker">
+           <div>Android Ski tracker</div>
+           <div class="points"></div>
+           <svg class="chart" id="chart-skitracker" width="240" height="240"></svg>
+        </div>
+        <div class="chart-group" id="skitracks">
+          <div>Android Ski Tracks</div>
+          <div class="points"></div>
+          <svg class="chart" id="chart-skitracks" width="240" height="240"></svg>
+        </div>
     </main>
     
     <script src="/p5.min.js"></script> 

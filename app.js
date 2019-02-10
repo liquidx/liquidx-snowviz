@@ -1,21 +1,26 @@
 // import gpxparse from "gpx-parse";
 import * as d3 from "d3";
 
-var getPoints = function(gpxObject) {
+var getPoints = function(gpxObjects) {
   var points = [];  // lat, lon, elevation, time (2019-01-16T01:40:28.710Z)
-  for (var track of gpxObject.tracks) {
-    console.log(`-- Track ${track.name}`);
-    for (var segment of track.segments) {
-      console.log(`  -- Segment`);
-      points = segment;
+  for (var gpxObject of gpxObjects) {
+    for (var track of gpxObject.tracks) {
+      console.log(`-- Track ${track.name}`);
+      for (var segment of track.segments) {
+        console.log(`  -- Segment: Length ${segment.length}`);
+        for (var point of segment) {
+          points.push(point);
+        }
+      }
     }
   }
   return points;
 }
 
-function plot(gpxObject) {
-  var points = getPoints(gpxObject);
+function plot(groupId, svgId, gpxObjects) {
+  var points = getPoints(gpxObjects);
 
+  const margin = {left: 10, right: 10, top: 10, bottom: 10};
   const width = 240;
   const height = 240;
   const barWidth = 1;
@@ -23,10 +28,11 @@ function plot(gpxObject) {
   var datetimeParse = d3.isoParse;
 
   points = points.map(p => { return {lat: p.lat, lon: p.lon, elevation: p.elevation, time: datetimeParse(p.time)} });
+  d3.select(groupId).select('.points').html(points.length);
 
-  const visualExtent = [[0, 0], [width, height]];
-  const xExtent = [0, width];
-  const yExtent = [0, height];
+  const visualExtent = [[margin.left, margin.top], [width - margin.left - margin.right, height - margin.top - margin.bottom]];
+  const xExtent = [margin.left, width - margin.left - margin.right];
+  const yExtent = [margin.top, height - margin.top - margin.bottom];
 
   var x = d3.scaleTime()
     .domain(d3.extent(points, d => d.time))
@@ -36,7 +42,7 @@ function plot(gpxObject) {
     .domain(d3.extent(points, d => d.elevation))
     .range(yExtent);
 
-  var chart1 = d3.select('#chart1')
+  var chart1 = d3.select(svgId)
     .attr('height', height)
     .attr('width', width);
 
@@ -66,24 +72,6 @@ function plot(gpxObject) {
     .attr("stroke-linecap", "round")    
     .attr('d', d => line(d));
 
-  // bar chart
-
-  var chart2 = d3.select('#chart2')
-    .attr('height', height)
-    .attr('width', width);
-  
-  var bar = chart2.selectAll('g')
-    .data(points)
-    .enter().append('g')
-      .attr('transform', function(d, i) { 
-        var xs = x(d.time);
-        return `translate(${xs * barWidth}, 0)`
-      });
-  bar.append('rect')
-    .attr('width', barWidth)
-    .attr('height', d => y(d.elevation))
-    .attr('y', d => { return height - y(d.elevation)});
-
   // zooming functionality.
 
   var zoomed = function() {
@@ -108,9 +96,45 @@ function main() {
   fetch("/data/2019-01-16/tracesnow-2019-01-16-10-40-28-suginohara.gpx")
     .then(response => response.json())
     .then(jsonResponse => {
-      plot(jsonResponse);
-    })
-}
+      plot('#tracesnow', '#chart-tracesnow', [jsonResponse]);
+    });
+
+    fetch("/data/2019-01-16/ios-slopes-2019-01-16.gpx")
+    .then(response => response.json())
+    .then(jsonResponse => {
+      plot('#slopes', '#chart-slopes', [jsonResponse]);
+    });   
+
+    fetch("/data/2019-01-16/ios-snoww-2019_01_16_01_20_09.gpx")
+    .then(response => response.json())
+    .then(jsonResponse1 => {
+      fetch("/data/2019-01-16/ios-snoww-2019_01_16_10_41_42.gpx")
+        .then(response => response.json())
+        .then(jsonResponse2 => {
+          plot('#snoww', '#chart-snoww', [jsonResponse1, jsonResponse2]);
+        });
+    });
+
+    fetch("/data/2019-01-16/SkiTracker-export-2019-01-16-10-40.gpx")
+    .then(response => response.json())
+    .then(jsonResponse1 => {
+      fetch("/data/2019-01-16/SkiTracker-export-2019-01-16-13-18.gpx")
+        .then(response => response.json())
+        .then(jsonResponse2 => {
+          plot('#skitracker', '#chart-skitracker', [jsonResponse1, jsonResponse2]);
+        });
+    });
+    
+    fetch("/data/2019-01-16/skitracks-2018-01-16a.gpx")
+    .then(response => response.json())
+    .then(jsonResponse1 => {
+      fetch("/data/2019-01-16/skitracks-2018-01-16b.gpx")
+        .then(response => response.json())
+        .then(jsonResponse2 => {
+          plot('#skitracks', '#chart-skitracks', [jsonResponse1, jsonResponse2]);
+        });
+    });
+  }
 
 main();
 
