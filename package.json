@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npx webpack",
     "watch": "npx webpack --watch",
-    "start": "node server.js"
+    "start": "webpack && node server.js"
   },
   "dependencies": {
     "d3": "^5.9.0",
