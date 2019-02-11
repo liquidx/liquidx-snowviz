@@ -98,11 +98,18 @@ var plot3DMap = function(chart, points, flipX, flipY) {
 
   controls.update();
 
+  // lighting
+  var light = new THREE.DirectionalLight( 0xffffff );
+  light.position.set( 1, 1, 1 );
+  scene.add( light );
+  var light = new THREE.AmbientLight( 0x222222 );
+  scene.add( light );
+
   // scene
   var object;
   var groundGeometry = new THREE.BoxBufferGeometry(40, 5, 40);
-  var soil = new THREE.MeshBasicMaterial({ color: 0x724412, wireframe: false});
-  var grass = new THREE.MeshBasicMaterial({ color: 0x427212, wireframe: false}); 
+  var soil = new THREE.MeshPhongMaterial( { color: 0x724412, flatShading: true } );
+  var grass = new THREE.MeshPhongMaterial({ color: 0x427212, flatShading: true}); 
   object = new THREE.Mesh(groundGeometry, soil);
   object.position.set( 0, 0, 0 );
   scene.add( object );
