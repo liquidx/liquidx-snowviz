@@ -1,5 +1,6 @@
-// import gpxparse from "gpx-parse";
 import * as d3 from "d3";
+import * as THREE from 'three';
+import * as OrbitControls from 'three-orbitcontrols';
 
 var allCharts = [];
 
@@ -30,17 +31,20 @@ var getPoints = function(gpxObjects) {
   return points;
 }
 
-var plot = function(groupId, svgId, gpxObjects) {
+var plot = function(groupId, gpxObjects) {
   var points = getPoints(gpxObjects);
   var datetimeParse = d3.isoParse;
   points = points.map(p => { return {lat: p.lat, lon: p.lon, elevation: p.elevation, time: datetimeParse(p.time)} });
   d3.select(groupId).select('.points').html(points.length);
 
-  var altChart = d3.select(groupId).select('.chart-altitude');
-  plotAltitude(altChart, points);
+//  var altChart = d3.select(groupId).select('.chart-altitude');
+//  plotAltitude(altChart, points);
 
   var mapChart = d3.select(groupId).select('.chart-map');
   plotMap(mapChart, points, true, true);
+
+  var map3d = d3.select(groupId).select('.chart-3d');
+  plot3DMap(map3d, points, true, true);
 };
 
 // helper method to flip the coordinate based on the extent and a bool 
@@ -49,6 +53,74 @@ var flipCoordinate = function(v, extent, flipOrNot) {
     return extent - v;
   }
   return v;
+};
+
+var plot3DMap = function(chart, points, flipX, flipY) {
+  if (chart.empty()) { return; }
+
+  var xt = d3.scaleTime()
+    .domain(d3.extent(points, d => d.time))
+    .range(xExtent);
+
+  var xlat = d3.scaleLinear()
+    .domain(d3.extent(points, d => d.lat))
+    .range(xExtent);
+
+  var ylon = d3.scaleLinear()
+    .domain(d3.extent(points, d => d.lon))
+    .range(yExtent);
+
+  var line = d3.line()
+    //.defined(d => !isNaN(d.time))
+    .x(d => { return flipCoordinate(xlat(d.lat), width, flipX)} )
+    .y(d => { return flipCoordinate(ylon(d.lon), height, flipY)} );
+
+  const clock = new THREE.Clock();
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera( 60, width / height, 1, 1000 );
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setSize(width, height);
+  chart.append(_ => { return renderer.domElement});
+
+  // can't figure out camera. y and z seem to be swapped.
+  camera.position.set(60, 30, -50);
+
+  // camera controls
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+  controls.dampingFactor = 0.25;
+  controls.screenSpacePanning = false;
+  controls.enableKeys = false;
+  controls.minDistance = 40;
+  controls.maxDistance = 150;  
+
+  controls.maxPolarAngle = Math.PI / 2;
+
+  controls.update();
+
+  // scene
+  var object;
+  var groundGeometry = new THREE.BoxBufferGeometry(40, 5, 40);
+  var soil = new THREE.MeshBasicMaterial({ color: 0x724412, wireframe: false});
+  var grass = new THREE.MeshBasicMaterial({ color: 0x427212, wireframe: false}); 
+  object = new THREE.Mesh(groundGeometry, soil);
+  object.position.set( 0, 0, 0 );
+  scene.add( object );
+
+  object = new THREE.Mesh(groundGeometry, grass);
+  object.position.set( 0, 5, 0);
+  scene.add( object );
+
+
+  function animate() {
+    requestAnimationFrame( animate );
+    // cube.rotation.x += 0.01;
+    // cube.rotation.y += 0.01;
+    console.log(camera.position);
+    controls.update();
+    renderer.render( scene, camera );
+  }
+  animate();
 };
 
 var plotMap = function(chart, points, flipX, flipY) {
@@ -70,8 +142,6 @@ var plotMap = function(chart, points, flipX, flipY) {
     //.defined(d => !isNaN(d.time))
     .x(d => { return flipCoordinate(xlat(d.lat), width, flipX)} )
     .y(d => { return flipCoordinate(ylon(d.lon), height, flipY)} );
-
-
 
   var defs = chart.append('defs');
   var gradient = defs.append('linearGradient')
@@ -126,8 +196,6 @@ var plotMap = function(chart, points, flipX, flipY) {
 
   var drag = d3.drag().on("drag", dragging);
   chart.call(drag);
-
-
 };
 
 
@@ -194,14 +262,14 @@ function main() {
   fetch("/data/2019-01-16/tracesnow-2019-01-16-10-40-28-suginohara.gpx")
     .then(response => response.json())
     .then(jsonResponse => {
-      var chart = plot('#tracesnow', '#chart-tracesnow', [jsonResponse]);
+      var chart = plot('#tracesnow', [jsonResponse]);
       allCharts.push(chart);
     });
 
     fetch("/data/2019-01-16/ios-slopes-2019-01-16.gpx")
     .then(response => response.json())
     .then(jsonResponse => {
-      var chart = plot('#slopes', '#chart-slopes', [jsonResponse]);
+      var chart = plot('#slopes', [jsonResponse]);
       allCharts.push(chart);
     });   
 
@@ -211,7 +279,7 @@ function main() {
       fetch("/data/2019-01-16/ios-snoww-2019_01_16_01_20_09.gpx")
         .then(response => response.json())
         .then(jsonResponse2 => {
-          var chart = plot('#snoww', '#chart-snoww', [jsonResponse1, jsonResponse2]);
+          var chart = plot('#snoww',  [jsonResponse1, jsonResponse2]);
           allCharts.push(chart);
         });
     });
@@ -222,7 +290,7 @@ function main() {
       fetch("/data/2019-01-16/SkiTracker-export-2019-01-16-13-18.gpx")
         .then(response => response.json())
         .then(jsonResponse2 => {
-          var chart = plot('#skitracker', '#chart-skitracker', [jsonResponse1, jsonResponse2]);
+          var chart = plot('#skitracker', [jsonResponse1, jsonResponse2]);
           allCharts.push(chart);
         });
     });
@@ -233,7 +301,7 @@ function main() {
       fetch("/data/2019-01-16/skitracks-2018-01-16b.gpx")
         .then(response => response.json())
         .then(jsonResponse2 => {
-          var chart = plot('#skitracks', '#chart-skitracks', [jsonResponse1, jsonResponse2]);
+          var chart = plot('#skitracks', [jsonResponse1, jsonResponse2]);
           allCharts.push(chart);
         });
     });
