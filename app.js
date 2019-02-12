@@ -58,17 +58,25 @@ var flipCoordinate = function(v, extent, flipOrNot) {
 var plot3DMap = function(chart, points, flipX, flipY) {
   if (chart.empty()) { return; }
 
+  const xExtent3d = [-20, 20];
+  const yExtent3d = [-20, 20];
+  const zExtent3d = [0, 40];
+
   var xt = d3.scaleTime()
     .domain(d3.extent(points, d => d.time))
-    .range(xExtent);
+    .range(xExtent3d);
 
   var xlat = d3.scaleLinear()
     .domain(d3.extent(points, d => d.lat))
-    .range(xExtent);
+    .range(xExtent3d);
 
   var ylon = d3.scaleLinear()
     .domain(d3.extent(points, d => d.lon))
-    .range(yExtent);
+    .range(yExtent3d);
+
+  var zalt = d3.scaleLinear()
+    .domain(d3.extent(points, d => d.elevation))
+    .range(zExtent3d);
 
   var line = d3.line()
     //.defined(d => !isNaN(d.time))
@@ -83,7 +91,7 @@ var plot3DMap = function(chart, points, flipX, flipY) {
   chart.append(_ => { return renderer.domElement});
 
   // can't figure out camera. y and z seem to be swapped.
-  camera.position.set(60, 30, -50);
+  camera.position.set(-50, 50, 50);
 
   // camera controls
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -91,8 +99,8 @@ var plot3DMap = function(chart, points, flipX, flipY) {
   controls.dampingFactor = 0.25;
   controls.screenSpacePanning = false;
   controls.enableKeys = false;
-  controls.minDistance = 40;
-  controls.maxDistance = 150;  
+  controls.minDistance = 20;
+  controls.maxDistance = 100;  
 
   controls.maxPolarAngle = Math.PI / 2;
 
@@ -108,7 +116,7 @@ var plot3DMap = function(chart, points, flipX, flipY) {
   // scene
   var object;
   var groundGeometry = new THREE.BoxBufferGeometry(40, 5, 40);
-  var soil = new THREE.MeshPhongMaterial( { color: 0x724412, flatShading: true } );
+  var soil = new THREE.MeshPhongMaterial( { color: 0x724412, flatShading: true} );
   var grass = new THREE.MeshPhongMaterial({ color: 0x427212, flatShading: true}); 
   object = new THREE.Mesh(groundGeometry, soil);
   object.position.set( 0, 0, 0 );
@@ -118,12 +126,37 @@ var plot3DMap = function(chart, points, flipX, flipY) {
   object.position.set( 0, 5, 0);
   scene.add( object );
 
+  // ski track
+  var subdivisions = 6;
+  var points3d = [];
+  for (var p of points) {
+    // z and y are swapped.
+    points3d.push(new THREE.Vector3(xlat(p.lat), zalt(p.elevation), ylon(p.lon)));
+  }
+  var spline = new THREE.CatmullRomCurve3(points3d);
+  var geometry1 = new THREE.BufferGeometry();
+  var vertices = [];
+  var point = new THREE.Vector3();
+  // for ( var i = 0; i < points3d.length * subdivisions; i ++ ) {
+  //   var t = i / ( points3d.length * subdivisions );
+  //   spline.getPoint( t, point );
+  //   vertices.push( point.x, point.y, point.z );
+  // }
+  for (var p of points3d) {
+    vertices.push(p.x, p.y, p.z);
+  }
+
+  geometry1.addAttribute('position', new THREE.Float32BufferAttribute( vertices, 3 ));
+  var	material = new THREE.LineBasicMaterial( { color: 0xffffff } );
+  var track = new THREE.Line(geometry1, material);
+  scene.add(track);
+
 
   function animate() {
     requestAnimationFrame( animate );
     // cube.rotation.x += 0.01;
     // cube.rotation.y += 0.01;
-    console.log(camera.position);
+    //console.log(camera.position);
     controls.update();
     renderer.render( scene, camera );
   }
