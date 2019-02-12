@@ -13,6 +13,7 @@
     "webpack-cli": "^3.2.2"
   },
   "dependencies": {
+    "ajv": "=6.8.1",
     "d3": "^5.9.1",
     "dat.gui": "^0.7.5",
     "eslint": "^5.13.0",
@@ -21,7 +22,8 @@
     "gpx-parse": "^0.10.4",
     "node-sass-middleware": "^0.11.0",
     "p5": "^0.7.3",
-    "ajv": "=6.8.1"
+    "three": "^0.101.1",
+    "three-orbitcontrols": "^2.101.1"
   },
   "engines": {
     "node": "6.10.x"
