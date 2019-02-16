@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Geometric Algorithmic Animations @liquidx</title>
+    <title>Snow Viz @liquidx</title>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,11 +10,14 @@
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body class="index">
-    <header><h1 class="title">Visualizing Snow Tracks by <a href="https://liquidx.net/">@liquidx</a></h1></header>
+    <header><h1 class="title">Snow Viz by <a href="https://liquidx.net/">@liquidx</a></h1></header>
     <main>
         <style>
         .chart-group {
           display: inline-block;
+        }
+        .chart-map {
+          display: none;
         }
         .chart-altitude {
           background-color: steelblue;
@@ -44,7 +47,6 @@
               <svg class="chart-map" width="240" height="240"></svg>
             </div>
             <div class="chart-3d"></div>       
-
         </div>
         <div class="chart-group" id="snoww">
             <div>iOS Snoww</div>
@@ -55,9 +57,8 @@
             <div>
               <svg class="chart-map" width="240" height="240"></svg>
             </div>
-            <div class="chart-3d"></div>       
-
-          </div>
+            <!----<div class="chart-3d"></div>-->
+        </div>
         <div class="chart-group" id="skitracker">
            <div>Android Ski tracker</div>
            <div class="points"></div>
@@ -67,7 +68,7 @@
             <div>
               <svg class="chart-map" width="240" height="240"></svg>
             </div>       
-            <div class="chart-3d"></div>       
+              <!----<div class="chart-3d"></div>-->
         </div>
         <div class="chart-group" id="skitracks">
           <div>Android Ski Tracks</div>
@@ -78,9 +79,8 @@
             <div>
               <svg class="chart-map" width="240" height="240"></svg>
             </div>
-            <div class="chart-3d"></div>       
-
-        </div>
+              <!----<div class="chart-3d"></div>-->
+            </div>
         <div class="chart-group" id="tracesnow">
             <div>(Android) Trace Snow</div>
             <div class="points"></div>
@@ -90,8 +90,7 @@
               <div>
                 <svg class="chart-map" width="240" height="240"></svg>
               </div>
-              <div class="chart-3d"></div>       
-
+              <!----<div class="chart-3d"></div>-->
         </div>        
     </main>
     

@@ -1,13 +1,14 @@
 import * as d3 from "d3";
 import * as THREE from 'three';
+import * as dat from 'dat.gui';
 import * as OrbitControls from 'three-orbitcontrols';
 
 var allCharts = [];
 
 // global chart consts
 const margin = {left: 10, right: 10, top: 10, bottom: 10};
-const width = 240;
-const height = 240;
+const width = 480;
+const height = 480;
 const barWidth = 1;
 
 const visualExtent = [[margin.left, margin.top], [width - margin.left - margin.right, height - margin.top - margin.bottom]];
@@ -44,7 +45,16 @@ var plot = function(groupId, gpxObjects) {
   plotMap(mapChart, points, true, true);
 
   var map3d = d3.select(groupId).select('.chart-3d');
-  plot3DMap(map3d, points, true, true);
+  var p = plot3DMap(map3d, points, false, false);
+  if (p) {
+    var gui = new dat.GUI();
+    gui.add(p.camera.rotation, 'x', -Math.PI / 2, Math.PI / 2);
+    gui.add(p.camera.rotation, 'y', -Math.PI / 2, Math.PI / 2);
+    gui.add(p.camera.rotation, 'z', -Math.PI , Math.PI);  
+    gui.add(p.camera.position, 'x', -100, 100);
+    gui.add(p.camera.position, 'y', -100, 100);
+    gui.add(p.camera.position, 'z', -100, 100);  
+  }
 };
 
 // helper method to flip the coordinate based on the extent and a bool 
@@ -58,9 +68,9 @@ var flipCoordinate = function(v, extent, flipOrNot) {
 var plot3DMap = function(chart, points, flipX, flipY) {
   if (chart.empty()) { return; }
 
-  const xExtent3d = [-20, 20];
+  const xExtent3d = [20, -20];
   const yExtent3d = [-20, 20];
-  const zExtent3d = [0, 40];
+  const zExtent3d = [0, 20];
 
   var xt = d3.scaleTime()
     .domain(d3.extent(points, d => d.time))
@@ -91,7 +101,15 @@ var plot3DMap = function(chart, points, flipX, flipY) {
   chart.append(_ => { return renderer.domElement});
 
   // can't figure out camera. y and z seem to be swapped.
-  camera.position.set(-50, 50, 50);
+  camera.position.set(-50, 35, 35);
+  //camera.lookAt(new THREE.Vector3(0, 0, 0));
+  //camera.rotateOnAxis(new THREE.Vector3(1, 1, 0), Math.PI / 2);
+  camera.rotation.set(-Math.PI / 4, -Math.PI / 4, -Math.PI * 0.8);
+  camera.up = new THREE.Vector3(0, 0, 1);
+  console.log(camera.up);
+
+  var vector = new THREE.Vector3(0, 0, 1);
+  //camera.setRotationFromAxisAngle(vector);
 
   // camera controls
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -99,44 +117,63 @@ var plot3DMap = function(chart, points, flipX, flipY) {
   controls.dampingFactor = 0.25;
   controls.screenSpacePanning = false;
   controls.enableKeys = false;
-  controls.minDistance = 20;
-  controls.maxDistance = 100;  
+  // controls.minDistance = 20;
+  // controls.maxDistance = 100;  
 
-  controls.maxPolarAngle = Math.PI / 2;
+  //controls.maxPolarAngle = Math.PI / 2;
 
   controls.update();
 
   // lighting
-  var light = new THREE.DirectionalLight( 0xffffff );
-  light.position.set( 1, 1, 1 );
-  scene.add( light );
-  var light = new THREE.AmbientLight( 0x222222 );
+  //lights
+  //https://stackoverflow.com/questions/15478093/realistic-lighting-sunlight-with-three-js
+  var dirLight = new THREE.DirectionalLight(0x999999,3);
+  dirLight.position.set(0, 80, 80);
+  dirLight.position.multiplyScalar(10);
+  dirLight.name = "dirlight";
+  dirLight.castShadow = true;
+
+  dirLight.shadow.mapSize.width = 768;//4096;
+  dirLight.shadow.mapSize.height = 768; //4096;
+  dirLight.shadow.camera.near = -10;
+  dirLight.shadow.camera.far = 200;
+  //dirLight.shadowBias = 0.0005;
+  scene.add(dirLight);
+
+  var light = new THREE.AmbientLight( 0x888888 );
   scene.add( light );
 
   // scene
   var object;
-  var groundGeometry = new THREE.BoxBufferGeometry(40, 5, 40);
+
+  var subjects = new THREE.Group();
+  var base = new THREE.Group();
+  var groundGeometry = new THREE.BoxBufferGeometry(40, 40, 5);
   var soil = new THREE.MeshPhongMaterial( { color: 0x724412, flatShading: true} );
-  var grass = new THREE.MeshPhongMaterial({ color: 0x427212, flatShading: true}); 
+  var grass = new THREE.MeshLambertMaterial({ color: 0x427212, flatShading: true}); 
   object = new THREE.Mesh(groundGeometry, soil);
-  object.position.set( 0, 0, 0 );
-  scene.add( object );
+  object.position.set(0, 0, -10);
+  object.receiveShadow = true;
+  base.add( object );
 
   object = new THREE.Mesh(groundGeometry, grass);
-  object.position.set( 0, 5, 0);
-  scene.add( object );
+  object.position.set( 0, 0, -5);
+  object.receiveShadow = true;
+  base.add( object );
+
+  subjects.add(base);
 
   // ski track
   var subdivisions = 6;
   var points3d = [];
   for (var p of points) {
     // z and y are swapped.
-    points3d.push(new THREE.Vector3(xlat(p.lat), zalt(p.elevation), ylon(p.lon)));
+    points3d.push(new THREE.Vector3(xlat(p.lat), ylon(p.lon), zalt(p.elevation)));
   }
   var spline = new THREE.CatmullRomCurve3(points3d);
-  var geometry1 = new THREE.BufferGeometry();
+  var lineGeometry = new THREE.BufferGeometry();
   var vertices = [];
-  var point = new THREE.Vector3();
+  //var point = new THREE.Vector3();
   // for ( var i = 0; i < points3d.length * subdivisions; i ++ ) {
   //   var t = i / ( points3d.length * subdivisions );
   //   spline.getPoint( t, point );
@@ -146,10 +183,25 @@ var plot3DMap = function(chart, points, flipX, flipY) {
     vertices.push(p.x, p.y, p.z);
   }
 
-  geometry1.addAttribute('position', new THREE.Float32BufferAttribute( vertices, 3 ));
-  var	material = new THREE.LineBasicMaterial( { color: 0xffffff } );
-  var track = new THREE.Line(geometry1, material);
-  scene.add(track);
+  lineGeometry.addAttribute('position', new THREE.Float32BufferAttribute( vertices, 3 ));
+  var	lineMaterial = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 4} );
+  var track = new THREE.Line(lineGeometry, lineMaterial);
+  track.castShadow = true;
+  subjects.add(track);
+
+  scene.add(subjects);
+
+  // Add debug axis
+  var xaxisPoints = [0, 0, 0, 100, 0, 0];
+  var xaxisGeo = new THREE.BufferGeometry();
+  xaxisGeo.addAttribute('position', new THREE.Float32BufferAttribute(xaxisPoints, 3));
+  var xaxis = new THREE.Line(xaxisGeo, new THREE.LineBasicMaterial({color: 0xff0000}));
+  scene.add(xaxis);
+  var yaxisPoints = [0, 0, 0, 0, 100, 0];
+  var yaxisGeo = new THREE.BufferGeometry();
+  yaxisGeo.addAttribute('position', new THREE.Float32BufferAttribute(yaxisPoints, 3));
+  var yaxis = new THREE.Line(yaxisGeo, new THREE.LineBasicMaterial({color: 0x00ff00}));
+  scene.add(yaxis);
 
 
   function animate() {
@@ -157,10 +209,12 @@ var plot3DMap = function(chart, points, flipX, flipY) {
     // cube.rotation.x += 0.01;
     // cube.rotation.y += 0.01;
     //console.log(camera.position);
-    controls.update();
+    //controls.update();
+    subjects.rotation.z += 0.005;
     renderer.render( scene, camera );
   }
   animate();
+  return {camera: camera};
 };
 
 var plotMap = function(chart, points, flipX, flipY) {
@@ -299,6 +353,8 @@ var massZoom = function(transform) {
 };
 
 function main() {
+
+
   fetch("/data/2019-01-16/tracesnow-2019-01-16-10-40-28-suginohara.gpx")
     .then(response => response.json())
     .then(jsonResponse => {
