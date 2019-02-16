@@ -62,6 +62,7 @@ var plot = function(groupId, gpxObjects) {
   var p = plot3DMap(map3d, points, false, false);
   if (p) {
     var gui = new dat.GUI();
+    gui.add(p, 'autorotate');
     gui.add(p.camera.rotation, 'x', -Math.PI / 2, Math.PI / 2);
     gui.add(p.camera.rotation, 'y', -Math.PI / 2, Math.PI / 2);
     gui.add(p.camera.rotation, 'z', -Math.PI , Math.PI);  
@@ -81,6 +82,8 @@ var flipCoordinate = function(v, extent, flipOrNot) {
 
 var plot3DMap = function(chart, points, flipX, flipY) {
   if (chart.empty()) { return; }
+  
+  var plot = {autorotate: true};
 
   const xExtent3d = [20, -20];
   const yExtent3d = [-20, 20];
@@ -248,11 +251,18 @@ var plot3DMap = function(chart, points, flipX, flipY) {
   function animate() {
     requestAnimationFrame( animate );
     controls.update();
-    subjects.rotation.z += 0.002;
+    if (plot.autorotate) {
+      subjects.rotation.z += 0.002;
+    }
     renderer.render( scene, camera );
   }
   animate();
-  return {camera: camera};
+
+  plot.camera = camera;
+  plot.subjects = subjects;
+  plot.track = track;
+
+  return plot;
 };
 
 var plotMap = function(chart, points, flipX, flipY) {
