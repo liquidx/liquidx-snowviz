@@ -152,6 +152,8 @@ var plot3DMap = function(chart, points, flipX, flipY) {
   dirLight.name = "dirlight";
   dirLight.castShadow = true;
 
+  dirLight.shadow = new THREE.LightShadow( new THREE.PerspectiveCamera( 70, 1, 200, 2000 ) );
+  dirLight.shadow.bias = - 0.000222;
   dirLight.shadow.mapSize.width = 768;//4096;
   dirLight.shadow.mapSize.height = 768; //4096;
   dirLight.shadow.camera.near = -10;
@@ -200,38 +202,48 @@ var plot3DMap = function(chart, points, flipX, flipY) {
   var flatVerticies = [];
   var flatColors = [];
   var smoothed = true;
-  if (smoothed) {
-    var subdivisions = 6;
-    linePoints = spline.getPoints(linePoints.length * subdivisions);
+  var tube = true;
 
-    // need to expand colors.
-    var splinedColors = [];
-    for (var color of lineColors) {
-      for (var i = 0; i < subdivisions; i++) {
-        splinedColors.push(color);
+  if (tube) {
+    var tubeGeometry = new THREE.TubeGeometry(spline, linePoints.length, 0.1, 8, false);
+    var tubeMaterial = new THREE.MeshLambertMaterial( { color: 0xffff00 } );
+    var tubeMesh = new THREE.Mesh(tubeGeometry, tubeMaterial);
+    subjects.add(tubeMesh);
+
+  } else {
+    if (smoothed) {
+      var subdivisions = 6;
+      linePoints = spline.getPoints(linePoints.length * subdivisions);
+
+      // need to expand colors.
+      var splinedColors = [];
+      for (var color of lineColors) {
+        for (var i = 0; i < subdivisions; i++) {
+          splinedColors.push(color);
+        }
       }
+      // needs endcap
+      splinedColors.push(splinedColors[splinedColors.length - 1]);
+      lineColors = splinedColors;
+    } 
+
+    // flatten arrays
+    for (var p of linePoints) {
+      flatVerticies.push(p.x, p.y, p.z);
     }
-    // needs endcap
-    splinedColors.push(splinedColors[splinedColors.length - 1]);
-    lineColors = splinedColors;
-  } 
+    for (var c of lineColors) {
+      flatColors.push(c.r, c.g, c.b);
+    }
+    lineGeometry.addAttribute('position', new THREE.Float32BufferAttribute(flatVerticies, 3));
+    lineGeometry.addAttribute('color', new THREE.Float32BufferAttribute(flatColors, 3));
 
-  // flatten arrays
-  for (var p of linePoints) {
-    flatVerticies.push(p.x, p.y, p.z);
+    var	lineMaterial = new THREE.LineBasicMaterial( {
+      color: 0xffffff,
+      vertexColors: THREE.VertexColors} );
+    var track = new THREE.Line(lineGeometry, lineMaterial);
+    track.castShadow = true;
+    subjects.add(track);
   }
-  for (var c of lineColors) {
-    flatColors.push(c.r, c.g, c.b);
-  }
-  lineGeometry.addAttribute('position', new THREE.Float32BufferAttribute(flatVerticies, 3));
-  lineGeometry.addAttribute('color', new THREE.Float32BufferAttribute(flatColors, 3));
-
-  var	lineMaterial = new THREE.LineBasicMaterial( {
-    color: 0xffffff,
-    vertexColors: THREE.VertexColors} );
-  var track = new THREE.Line(lineGeometry, lineMaterial);
-  track.castShadow = true;
-  subjects.add(track);
 
   scene.add(subjects);
 
