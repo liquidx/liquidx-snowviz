@@ -17,14 +17,29 @@ const yExtent = [margin.top, height - margin.top - margin.bottom];
 
 
 var getPoints = function(gpxObjects) {
+  var datetimeParse = d3.isoParse;
   var points = [];  // lat, lon, elevation, time (2019-01-16T01:40:28.710Z)
+  var lastPoint = null;
   for (var gpxObject of gpxObjects) {
     for (var track of gpxObject.tracks) {
       //console.log(`-- Track ${track.name}`);
       for (var segment of track.segments) {
         //console.log(`  -- Segment: Length ${segment.length}`);
         for (var point of segment) {
+          // convert timestamp
+          point.time = datetimeParse(point.time);
+
+          if (lastPoint) {
+            var eleDiff = point.elevation - lastPoint.elevation;
+            var latDiff = point.lat - lastPoint.lat;
+            var lonDiff = point.lon - lastPoint.lon;
+            var timeDiff = point.time - lastPoint.time; // ms
+            point.diff = {elevation: eleDiff, lat: latDiff, lon: lonDiff, time: timeDiff};
+            var timeDiffSecs = timeDiff / 1000;
+            point.velocity = {elevation: eleDiff / timeDiffSecs, lat: latDiff / timeDiffSecs, lon: lonDiff / timeDiffSecs};
+          }
           points.push(point);
+          lastPoint = point;
         }
       }
     }
@@ -34,8 +49,7 @@ var getPoints = function(gpxObjects) {
 
 var plot = function(groupId, gpxObjects) {
   var points = getPoints(gpxObjects);
-  var datetimeParse = d3.isoParse;
-  points = points.map(p => { return {lat: p.lat, lon: p.lon, elevation: p.elevation, time: datetimeParse(p.time)} });
+  //points = points.map(p => { return {lat: p.lat, lon: p.lon, elevation: p.elevation, time: p.time, diff: p.diff} });
   d3.select(groupId).select('.points').html(points.length);
 
 //  var altChart = d3.select(groupId).select('.chart-altitude');
@@ -96,7 +110,9 @@ var plot3DMap = function(chart, points, flipX, flipY) {
   const clock = new THREE.Clock();
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera( 60, width / height, 1, 1000 );
-  const renderer = new THREE.WebGLRenderer();
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.setClearColor( 0x000000, 0.0 );
   renderer.setSize(width, height);
   chart.append(_ => { return renderer.domElement});
 
@@ -150,7 +166,7 @@ var plot3DMap = function(chart, points, flipX, flipY) {
   var base = new THREE.Group();
   var groundGeometry = new THREE.BoxBufferGeometry(40, 40, 5);
   var soil = new THREE.MeshPhongMaterial( { color: 0x724412, flatShading: true} );
-  var grass = new THREE.MeshLambertMaterial({ color: 0x427212, flatShading: true}); 
+  var grass = new THREE.MeshPhongMaterial({ color: 0x427212, flatShading: true}); 
   object = new THREE.Mesh(groundGeometry, soil);
   object.position.set(0, 0, -10);
   object.receiveShadow = true;
@@ -164,27 +180,52 @@ var plot3DMap = function(chart, points, flipX, flipY) {
   subjects.add(base);
 
   // ski track
-  var subdivisions = 6;
-  var points3d = [];
+  var linePoints = [];
+  var lineColors = [];
   for (var p of points) {
-    // z and y are swapped.
-    points3d.push(new THREE.Vector3(xlat(p.lat), ylon(p.lon), zalt(p.elevation)));
+    linePoints.push(new THREE.Vector3(xlat(p.lat), ylon(p.lon), zalt(p.elevation)));
+    if (p.diff && p.diff.elevation > 0) { // going up.
+      lineColors.push(new THREE.Color(0, 0, 1));
+    } else if (p.diff && p.velocity.elevation < -3) {  // going down, fast!
+      lineColors.push(new THREE.Color(1, 0, 0));
+    } else {
+      lineColors.push(new THREE.Color(1, 1, 1));
+    }
   }
-  var spline = new THREE.CatmullRomCurve3(points3d);
+  var spline = new THREE.CatmullRomCurve3(linePoints);
   var lineGeometry = new THREE.BufferGeometry();
-  var vertices = [];
-  //var point = new THREE.Vector3();
-  // for ( var i = 0; i < points3d.length * subdivisions; i ++ ) {
-  //   var t = i / ( points3d.length * subdivisions );
-  //   spline.getPoint( t, point );
-  //   vertices.push( point.x, point.y, point.z );
-  // }
-  for (var p of points3d) {
-    vertices.push(p.x, p.y, p.z);
-  }
+  var flatVerticies = [];
+  var flatColors = [];
+  var smoothed = true;
+  if (smoothed) {
+    var subdivisions = 6;
+    linePoints = spline.getPoints(linePoints.length * subdivisions);
 
-  lineGeometry.addAttribute('position', new THREE.Float32BufferAttribute( vertices, 3 ));
-  var	lineMaterial = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 4} );
+    // need to expand colors.
+    var splinedColors = [];
+    for (var color of lineColors) {
+      for (var i = 0; i < subdivisions; i++) {
+        splinedColors.push(color);
+      }
+    }
+    // needs endcap
+    splinedColors.push(splinedColors[splinedColors.length - 1]);
+    lineColors = splinedColors;
+  } 
+
+  // flatten arrays
+  for (var p of linePoints) {
+    flatVerticies.push(p.x, p.y, p.z);
+  }
+  for (var c of lineColors) {
+    flatColors.push(c.r, c.g, c.b);
+  }
+  lineGeometry.addAttribute('position', new THREE.Float32BufferAttribute(flatVerticies, 3));
+  lineGeometry.addAttribute('color', new THREE.Float32BufferAttribute(flatColors, 3));
+
+  var	lineMaterial = new THREE.LineBasicMaterial( {
+    color: 0xffffff,
+    vertexColors: THREE.VertexColors} );
   var track = new THREE.Line(lineGeometry, lineMaterial);
   track.castShadow = true;
   subjects.add(track);
@@ -206,11 +247,8 @@ var plot3DMap = function(chart, points, flipX, flipY) {
 
   function animate() {
     requestAnimationFrame( animate );
-    // cube.rotation.x += 0.01;
-    // cube.rotation.y += 0.01;
-    //console.log(camera.position);
-    //controls.update();
-    subjects.rotation.z += 0.005;
+    controls.update();
+    subjects.rotation.z += 0.002;
     renderer.render( scene, camera );
   }
   animate();
